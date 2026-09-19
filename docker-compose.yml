@@ -6,4 +6,9 @@ services:
       - "8080:8080"
     volumes:
       - ./data:/app/data
+    environment:
+      - LINKWARDEN_HOST=${LINKWARDEN_HOST:-http://localhost:3000}
+      - LINKWARDEN_TOKEN=${LINKWARDEN_TOKEN:-}
+      - LINKWARDEN_COLLECTION_ID=${LINKWARDEN_COLLECTION_ID:-}
+      - LINKWARDEN_LIMIT=${LINKWARDEN_LIMIT:-10}
     restart: unless-stopped
