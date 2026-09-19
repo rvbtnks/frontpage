@@ -11,4 +11,5 @@ services:
       - LINKWARDEN_TOKEN=${LINKWARDEN_TOKEN:-}
       - LINKWARDEN_COLLECTION_ID=${LINKWARDEN_COLLECTION_ID:-}
       - LINKWARDEN_LIMIT=${LINKWARDEN_LIMIT:-10}
+      - RSS=${RSS:-https://hnrss.org/frontpage?count=20}
     restart: unless-stopped

@@ -60,8 +60,9 @@ KARAKEEP_HEADERS = {
     "Content-Type": "application/json"
 } if KARAKEEP_TOKEN else {}
 
-# HN RSS
-HN_RSS_URL = "https://hnrss.org/frontpage?count=20"
+# HN RSS - configurable via environment variable
+RSS_URL = os.getenv("RSS", "https://hnrss.org/frontpage?count=20")
+RSS_TITLE = None  # Will be populated on first fetch
 
 # Data persistence
 DATA_DIR = Path("/app/data")
@@ -233,9 +234,14 @@ async def get_links(collection_id: int = None, tag: str = None):
 
 @app.get("/api/hackernews")
 async def get_hackernews():
-    """Fetch HN frontpage RSS."""
+    """Fetch RSS feed and return items with feed title."""
+    global RSS_TITLE
     try:
-        feed = feedparser.parse(HN_RSS_URL)
+        feed = feedparser.parse(RSS_URL)
+        # Update the feed title from RSS
+        if feed.feed.get("title"):
+            RSS_TITLE = feed.feed.get("title")
+        
         items = []
         for entry in feed.entries[:20]:
             items.append({
@@ -244,11 +250,17 @@ async def get_hackernews():
                 "comments_url": entry.get("comments", ""),
                 "published": entry.get("published", ""),
             })
-        logger.info(f"Fetched {len(items)} HN items")
+        logger.info(f"Fetched {len(items)} RSS items from {RSS_URL}")
         return items
     except Exception as e:
-        logger.error(f"HN RSS error: {e}")
-        raise HTTPException(502, "Failed to fetch Hacker News")
+        logger.error(f"RSS error: {e}")
+        raise HTTPException(502, "Failed to fetch RSS feed")
+
+
+@app.get("/api/rss-title")
+async def get_rss_title():
+    """Return the current RSS feed title."""
+    return {"title": RSS_TITLE or "Hacker News"}
 
 
 @app.get("/api/services")

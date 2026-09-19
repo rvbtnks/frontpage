@@ -141,7 +141,7 @@
         /* Services column */
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 0.5rem;
             flex: 1;
             align-content: start;
@@ -169,12 +169,12 @@
         }
 
         .service-icon {
-            font-size: 1.5rem;
+            font-size: 1rem;
             margin-bottom: 0.25rem;
         }
 
         .service-name {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             font-weight: 500;
             text-align: center;
             word-break: break-word;
@@ -448,7 +448,7 @@
         <!-- Hacker News Column -->
         <div class="column">
             <div class="column-header">
-                <span class="column-title">Hacker News</span>
+                <span class="column-title" id="rss-title">Hacker News</span>
                 <button class="btn-icon" onclick="loadHN()" title="Refresh">↻</button>
             </div>
             <div id="hn-container" class="hn-list">
@@ -572,7 +572,19 @@
                 `).join('');
             } catch (e) {
                 console.error('HN error:', e);
-                hnContainer.innerHTML = '<div class="error-state">Failed to load HN</div>';
+                hnContainer.innerHTML = '<div class="error-state">Failed to load RSS feed</div>';
+            }
+        }
+
+        // Load RSS title
+        async function loadRSSTitle() {
+            try {
+                const resp = await fetch('/api/rss-title');
+                if (!resp.ok) throw new Error('Failed to load');
+                const data = await resp.json();
+                document.getElementById('rss-title').textContent = data.title || 'Hacker News';
+            } catch (e) {
+                console.error('RSS title error:', e);
             }
         }
 
@@ -675,6 +687,7 @@
         loadCollections().then(loadLinks);
         loadServices();
         loadHN();
+        loadRSSTitle();
     </script>
 </body>
 </html>
