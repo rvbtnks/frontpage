@@ -3,6 +3,7 @@
 
 import json
 import logging
+import os
 import random
 import sys
 import traceback
@@ -16,7 +17,7 @@ from pydantic import BaseModel
 
 # Configure logging to stdout with full tracebacks
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,  # Changed from DEBUG to INFO for production
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[logging.StreamHandler(sys.stdout)]
 )
@@ -24,13 +25,19 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Linkwarden config
-LINKWARDEN_HOST = "http://192.168.1.21:3000"
-LINKWARDEN_TOKEN = "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..UoI5UIt0x7MFbiJV.PaGvBXvmWR-tgbPyumm47DtEHPK1R9zYmUp2sUAVqe3wprE10E3WypwIbdHHTLiOE8x6zh-hWlwNQh-oMgH0bwiVC1tXszOSp3_Yq1eWfdxkB4dt4T_Z.7j8f2jyqPE6n9azO2XCDUQ"
+# Linkwarden config - configurable via environment variables
+LINKWARDEN_HOST = os.getenv("LINKWARDEN_HOST", "http://localhost:3000").rstrip('/')
+LINKWARDEN_TOKEN = os.getenv("LINKWARDEN_TOKEN", "")
+LINKWARDEN_COLLECTION_ID = os.getenv("LINKWARDEN_COLLECTION_ID", None)
+LINKWARDEN_LIMIT = int(os.getenv("LINKWARDEN_LIMIT", "10"))
+
+if not LINKWARDEN_TOKEN:
+    logger.warning("LINKWARDEN_TOKEN not set. Linkwarden integration will fail.")
+
 LINKWARDEN_HEADERS = {
     "Authorization": f"Bearer {LINKWARDEN_TOKEN}",
     "Content-Type": "application/json"
-}
+} if LINKWARDEN_TOKEN else {}
 
 # HN RSS
 HN_RSS_URL = "https://hnrss.org/frontpage?count=20"
@@ -62,30 +69,27 @@ def save_services(services: list[dict]) -> None:
 
 
 def linkwarden_request(endpoint: str, params: dict = None) -> dict:
-    """Make request to Linkwarden API with full error logging."""
+    """Make request to Linkwarden API with error logging."""
     url = f"{LINKWARDEN_HOST}{endpoint}"
-    logger.info(f"Linkwarden request: {url} params={params}")
+    logger.debug(f"Linkwarden request: {url} params={params}")
     
     try:
         resp = requests.get(url, headers=LINKWARDEN_HEADERS, params=params, timeout=10)
-        logger.info(f"Linkwarden response status: {resp.status_code}")
-        logger.debug(f"Linkwarden response body: {resp.text[:500]}")
+        logger.debug(f"Linkwarden response status: {resp.status_code}")
         resp.raise_for_status()
         return resp.json()
     except requests.exceptions.ConnectionError as e:
         logger.error(f"Connection error to Linkwarden: {e}")
-        raise HTTPException(502, f"Cannot connect to Linkwarden: {e}")
+        raise HTTPException(502, "Cannot connect to Linkwarden")
     except requests.exceptions.Timeout as e:
         logger.error(f"Timeout connecting to Linkwarden: {e}")
-        raise HTTPException(504, f"Linkwarden request timed out: {e}")
+        raise HTTPException(504, "Linkwarden request timed out")
     except requests.exceptions.HTTPError as e:
         logger.error(f"HTTP error from Linkwarden: {e}")
-        logger.error(f"Response body: {resp.text}")
-        raise HTTPException(resp.status_code, f"Linkwarden error: {resp.text}")
+        raise HTTPException(resp.status_code, "Linkwarden API error")
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(500, f"Unexpected error: {e}")
+        logger.error(f"Unexpected error in Linkwarden request: {e}")
+        raise HTTPException(500, "Unexpected error occurred")
 
 
 @app.get("/")
@@ -107,7 +111,14 @@ async def get_collections():
 @app.get("/api/links")
 async def get_links(collection_id: int = None):
     """Get random links from Linkwarden."""
-    params = {"limit": 50}  # Fetch more than we need to randomize
+    # Use env var collection_id if not provided in request
+    if collection_id is None and LINKWARDEN_COLLECTION_ID:
+        try:
+            collection_id = int(LINKWARDEN_COLLECTION_ID)
+        except (ValueError, TypeError):
+            pass
+    
+    params = {"limit": max(50, LINKWARDEN_LIMIT * 5)}  # Fetch more than we need to randomize
     if collection_id:
         params["collectionId"] = collection_id
     
@@ -120,9 +131,9 @@ async def get_links(collection_id: int = None):
     
     logger.info(f"Got {len(links)} links from Linkwarden")
     
-    # Randomize and take 10
+    # Randomize and take configured limit
     random.shuffle(links)
-    selected = links[:10]
+    selected = links[:LINKWARDEN_LIMIT]
     
     # Return simplified link data
     result = []
@@ -155,8 +166,7 @@ async def get_hackernews():
         return items
     except Exception as e:
         logger.error(f"HN RSS error: {e}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(502, f"Failed to fetch HN: {e}")
+        raise HTTPException(502, "Failed to fetch Hacker News")
 
 
 @app.get("/api/services")
@@ -192,9 +202,10 @@ async def global_exception_handler(request, exc):
     """Catch-all exception handler with full logging."""
     logger.error(f"Unhandled exception: {exc}")
     logger.error(traceback.format_exc())
+    # Don't expose traceback to clients in production
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc), "traceback": traceback.format_exc()}
+        content={"detail": "Internal server error"}
     )
 
 
