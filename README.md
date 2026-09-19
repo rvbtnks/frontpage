@@ -9,7 +9,7 @@ A lightweight landing page dashboard integrating with **Linkwarden** or **Karake
 ## Features
 
 - **Dual Bookmark Support**: Linkwarden or Karakeep integration
-- **Hacker News Feed**: Real-time frontpage stories via RSS
+- **News Feed**: Real-time frontpage stories via RSS
 - **Manual Services**: Add custom links (Plex, Nextcloud, etc.)
 - **Responsive Design**: Clean three-column layout
 - **Docker Ready**: Simple deployment with docker-compose
@@ -62,12 +62,6 @@ A lightweight landing page dashboard integrating with **Linkwarden** or **Karake
 
 \* Required only if using the respective service
 
-### Getting Your API Token
-
-**Linkwarden**: Settings → API → Generate token
-
-**Karakeep**: Settings/API section → Generate token
-
 ## Manual Services
 
 Add custom links from the UI:
@@ -101,54 +95,6 @@ Add custom links from the UI:
 | `GET` | `/api/services` | Get manual services |
 | `POST` | `/api/services` | Add a new service |
 | `DELETE` | `/api/services/{index}` | Delete service by index |
-
-## Security
-
-- ✅ No hardcoded credentials
-- ✅ Generic error messages (internal details hidden)
-- ✅ Server-side logging only
-- ✅ `.gitignore` configured
-
-**Best Practices**:
-1. Never commit `.env` to version control
-2. Use strong API tokens
-3. Run behind reverse proxy (nginx, Traefik) in production
-4. Enable HTTPS for external access
-
-## Development
-
-### Running Locally
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-export LINKWARDEN_TOKEN=your_token
-python server.py
-```
-
-### Building Docker Image
-
-```bash
-docker build -t frontpage .
-docker run -p 8080:8080 --env-file .env frontpage
-```
-
-## Troubleshooting
-
-**Connection Issues**:
-- Verify `BOOKMARK_SERVICE` is set correctly
-- Ensure `*_HOST` URL is accessible from container
-- Check API token validity
-- Review logs: `docker compose logs frontpage`
-
-**Data Persistence**: Services stored in `./data/services.json`. Ensure write permissions.
-
-**Port Conflicts**: Modify port mapping in `docker-compose.yml`:
-```yaml
-ports:
-  - "8081:8080"  # Change host port
-```
 
 ## License
 
