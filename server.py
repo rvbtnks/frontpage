@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Landing page backend with Linkwarden integration."""
+"""Landing page backend with Linkwarden or Karakeep integration."""
 
 import json
 import logging
@@ -25,19 +25,40 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# Bookmark service selection: "linkwarden" or "karakeep"
+BOOKMARK_SERVICE = os.getenv("BOOKMARK_SERVICE", "linkwarden").lower().strip()
+
+if BOOKMARK_SERVICE not in ("linkwarden", "karakeep"):
+    logger.warning(f"Invalid BOOKMARK_SERVICE '{BOOKMARK_SERVICE}', defaulting to 'linkwarden'")
+    BOOKMARK_SERVICE = "linkwarden"
+
 # Linkwarden config - configurable via environment variables
 LINKWARDEN_HOST = os.getenv("LINKWARDEN_HOST", "http://localhost:3000").rstrip('/')
 LINKWARDEN_TOKEN = os.getenv("LINKWARDEN_TOKEN", "")
 LINKWARDEN_COLLECTION_ID = os.getenv("LINKWARDEN_COLLECTION_ID", None)
 LINKWARDEN_LIMIT = int(os.getenv("LINKWARDEN_LIMIT", "10"))
 
-if not LINKWARDEN_TOKEN:
+# Karakeep config - configurable via environment variables
+KARAKEEP_HOST = os.getenv("KARAKEEP_HOST", "http://localhost:3000").rstrip('/')
+KARAKEEP_TOKEN = os.getenv("KARAKEEP_TOKEN", "")
+KARAKEEP_TAG = os.getenv("KARAKEEP_TAG", None)
+KARAKEEP_LIMIT = int(os.getenv("KARAKEEP_LIMIT", "10"))
+
+# Validate configuration based on selected service
+if BOOKMARK_SERVICE == "linkwarden" and not LINKWARDEN_TOKEN:
     logger.warning("LINKWARDEN_TOKEN not set. Linkwarden integration will fail.")
+elif BOOKMARK_SERVICE == "karakeep" and not KARAKEEP_TOKEN:
+    logger.warning("KARAKEEP_TOKEN not set. Karakeep integration will fail.")
 
 LINKWARDEN_HEADERS = {
     "Authorization": f"Bearer {LINKWARDEN_TOKEN}",
     "Content-Type": "application/json"
 } if LINKWARDEN_TOKEN else {}
+
+KARAKEEP_HEADERS = {
+    "Authorization": f"Bearer {KARAKEEP_TOKEN}",
+    "Content-Type": "application/json"
+} if KARAKEEP_TOKEN else {}
 
 # HN RSS
 HN_RSS_URL = "https://hnrss.org/frontpage?count=20"
@@ -92,6 +113,30 @@ def linkwarden_request(endpoint: str, params: dict = None) -> dict:
         raise HTTPException(500, "Unexpected error occurred")
 
 
+def karakeep_request(endpoint: str, params: dict = None) -> dict:
+    """Make request to Karakeep API with error logging."""
+    url = f"{KARAKEEP_HOST}{endpoint}"
+    logger.debug(f"Karakeep request: {url} params={params}")
+    
+    try:
+        resp = requests.get(url, headers=KARAKEEP_HEADERS, params=params, timeout=10)
+        logger.debug(f"Karakeep response status: {resp.status_code}")
+        resp.raise_for_status()
+        return resp.json()
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection error to Karakeep: {e}")
+        raise HTTPException(502, "Cannot connect to Karakeep")
+    except requests.exceptions.Timeout as e:
+        logger.error(f"Timeout connecting to Karakeep: {e}")
+        raise HTTPException(504, "Karakeep request timed out")
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"HTTP error from Karakeep: {e}")
+        raise HTTPException(resp.status_code, "Karakeep API error")
+    except Exception as e:
+        logger.error(f"Unexpected error in Karakeep request: {e}")
+        raise HTTPException(500, "Unexpected error occurred")
+
+
 @app.get("/")
 async def index():
     """Serve the main page."""
@@ -100,51 +145,88 @@ async def index():
 
 @app.get("/api/collections")
 async def get_collections():
-    """Get all collections from Linkwarden."""
-    data = linkwarden_request("/api/v1/collections")
-    # Return just the list of collections with id and name
-    collections = [{"id": c["id"], "name": c["name"]} for c in data.get("response", data)]
+    """Get all collections from the configured bookmark service."""
+    if BOOKMARK_SERVICE == "linkwarden":
+        data = linkwarden_request("/api/v1/collections")
+        collections = [{"id": c["id"], "name": c["name"]} for c in data.get("response", data)]
+    else:  # karakeep
+        data = karakeep_request("/api/v1/collections")
+        collections = [{"id": c["id"], "name": c["name"]} for c in data.get("response", data)]
+    
     logger.info(f"Returning {len(collections)} collections")
     return collections
 
 
 @app.get("/api/links")
-async def get_links(collection_id: int = None):
-    """Get random links from Linkwarden."""
-    # Use env var collection_id if not provided in request
-    if collection_id is None and LINKWARDEN_COLLECTION_ID:
-        try:
-            collection_id = int(LINKWARDEN_COLLECTION_ID)
-        except (ValueError, TypeError):
-            pass
-    
-    params = {"limit": max(50, LINKWARDEN_LIMIT * 5)}  # Fetch more than we need to randomize
-    if collection_id:
-        params["collectionId"] = collection_id
-    
-    data = linkwarden_request("/api/v1/links", params)
-    links = data.get("response", data)
-    
-    # Handle if links is wrapped in another structure
-    if isinstance(links, dict) and "links" in links:
-        links = links["links"]
-    
-    logger.info(f"Got {len(links)} links from Linkwarden")
-    
-    # Randomize and take configured limit
-    random.shuffle(links)
-    selected = links[:LINKWARDEN_LIMIT]
-    
-    # Return simplified link data
-    result = []
-    for link in selected:
-        result.append({
-            "id": link.get("id"),
-            "name": link.get("name") or link.get("title") or link.get("url", "Untitled"),
-            "url": link.get("url"),
-            "description": link.get("description", ""),
-            "collection": link.get("collection", {}).get("name", "")
-        })
+async def get_links(collection_id: int = None, tag: str = None):
+    """Get random links from the configured bookmark service (Linkwarden or Karakeep)."""
+    if BOOKMARK_SERVICE == "linkwarden":
+        # Use env var collection_id if not provided in request
+        if collection_id is None and LINKWARDEN_COLLECTION_ID:
+            try:
+                collection_id = int(LINKWARDEN_COLLECTION_ID)
+            except (ValueError, TypeError):
+                pass
+        
+        params = {"limit": max(50, LINKWARDEN_LIMIT * 5)}  # Fetch more than we need to randomize
+        if collection_id:
+            params["collectionId"] = collection_id
+        
+        data = linkwarden_request("/api/v1/links", params)
+        links = data.get("response", data)
+        
+        # Handle if links is wrapped in another structure
+        if isinstance(links, dict) and "links" in links:
+            links = links["links"]
+        
+        logger.info(f"Got {len(links)} links from Linkwarden")
+        
+        # Randomize and take configured limit
+        random.shuffle(links)
+        selected = links[:LINKWARDEN_LIMIT]
+        
+        # Return simplified link data
+        result = []
+        for link in selected:
+            result.append({
+                "id": link.get("id"),
+                "name": link.get("name") or link.get("title") or link.get("url", "Untitled"),
+                "url": link.get("url"),
+                "description": link.get("description", ""),
+                "collection": link.get("collection", {}).get("name", "")
+            })
+    else:  # karakeep
+        # Use env var tag if not provided in request
+        if tag is None and KARAKEEP_TAG:
+            tag = KARAKEEP_TAG
+        
+        params = {"limit": max(50, KARAKEEP_LIMIT * 5)}  # Fetch more than we need to randomize
+        if tag:
+            params["tag"] = tag
+        
+        data = karakeep_request("/api/v1/links", params)
+        links = data.get("response", data)
+        
+        # Handle if links is wrapped in another structure
+        if isinstance(links, dict) and "links" in links:
+            links = links["links"]
+        
+        logger.info(f"Got {len(links)} links from Karakeep")
+        
+        # Randomize and take configured limit
+        random.shuffle(links)
+        selected = links[:KARAKEEP_LIMIT]
+        
+        # Return simplified link data
+        result = []
+        for link in selected:
+            result.append({
+                "id": link.get("id"),
+                "name": link.get("name") or link.get("title") or link.get("url", "Untitled"),
+                "url": link.get("url"),
+                "description": link.get("description", ""),
+                "tags": link.get("tags", [])
+            })
     
     return result
 
