@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #111113;
+            --bg-card: #16161a;
+            --bg-card-hover: #1e1e23;
+            --border: #27272a;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger: #ef4444;
+            --hn-orange: #ff6600;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 400px 1fr 560px;
+            min-height: 100vh;
+            gap: 1px;
+            background: var(--border);
+        }
+
+        .column {
+            background: var(--bg-primary);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .column-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-family: inherit;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-icon:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        select {
+            font-family: inherit;
+            font-size: 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.25rem 1.5rem 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.35rem center;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Services column */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            flex: 1;
+            align-content: start;
+        }
+
+        .service-card {
+            aspect-ratio: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--text-primary);
+            position: relative;
+            transition: all 0.15s ease;
+            padding: 0.5rem;
+        }
+
+        .service-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--text-muted);
+        }
+
+        .service-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .service-name {
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-align: center;
+            word-break: break-word;
+            line-height: 1.2;
+        }
+
+        .service-delete {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 16px;
+            height: 16px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .service-card:hover .service-delete {
+            opacity: 1;
+        }
+
+        .add-service-card {
+            border-style: dashed;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .add-service-card:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Linkwarden column */
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.6rem;
+            flex: 1;
+            align-content: start;
+        }
+
+        .link-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .link-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--text-muted);
+        }
+
+        .link-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.3;
+        }
+
+        .link-collection {
+            font-size: 0.65rem;
+            color: var(--accent);
+        }
+
+        .link-meta {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* HN column */
+        .hn-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .hn-item {
+            padding: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            transition: all 0.15s ease;
+        }
+
+        .hn-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .hn-title {
+            font-size: 0.75rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: block;
+            line-height: 1.3;
+            margin-bottom: 0.25rem;
+        }
+
+        .hn-title:hover {
+            color: var(--hn-orange);
+        }
+
+        .hn-meta {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .hn-meta a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .hn-meta a:hover {
+            color: var(--hn-orange);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .modal h3 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .form-group input {
+            font-family: inherit;
+            font-size: 0.875rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+        }
+
+        .modal-actions .btn {
+            padding: 0.4rem 0.75rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        /* States */
+        .loading, .empty-state, .error-state {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .error-state {
+            color: var(--danger);
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- Services Column -->
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">Services</span>
+            </div>
+            <div id="services-container" class="services-grid">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Linkwarden Column -->
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">Linkwarden</span>
+                <div class="header-controls">
+                    <select id="collection-filter">
+                        <option value="">All</option>
+                    </select>
+                    <button class="btn-icon" onclick="loadLinks()" title="Refresh">↻</button>
+                </div>
+            </div>
+            <div id="links-container" class="links-grid">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Hacker News Column -->
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">Hacker News</span>
+                <button class="btn-icon" onclick="loadHN()" title="Refresh">↻</button>
+            </div>
+            <div id="hn-container" class="hn-list">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Service Modal -->
+    <div id="modal-overlay" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h3>Add Service</h3>
+            <form class="modal-form" onsubmit="addService(event)">
+                <div class="form-group">
+                    <label for="service-name">Name</label>
+                    <input type="text" id="service-name" required placeholder="Proxmox">
+                </div>
+                <div class="form-group">
+                    <label for="service-url">URL</label>
+                    <input type="url" id="service-url" required placeholder="https://192.168.1.10:8006">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'landing_collection';
+        const servicesContainer = document.getElementById('services-container');
+        const linksContainer = document.getElementById('links-container');
+        const hnContainer = document.getElementById('hn-container');
+        const collectionFilter = document.getElementById('collection-filter');
+
+        // Get first letter or icon for service
+        function getServiceIcon(name) {
+            return name.charAt(0).toUpperCase();
+        }
+
+        // Load collections and restore saved selection
+        async function loadCollections() {
+            try {
+                const resp = await fetch('/api/collections');
+                if (!resp.ok) throw new Error('Failed to load');
+                const collections = await resp.json();
+                
+                collectionFilter.innerHTML = '<option value="">All</option>';
+                collections.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    collectionFilter.appendChild(opt);
+                });
+
+                // Restore saved selection
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    collectionFilter.value = saved;
+                }
+            } catch (e) {
+                console.error('Collections error:', e);
+            }
+        }
+
+        // Load links
+        async function loadLinks() {
+            const collectionId = collectionFilter.value;
+            
+            // Save selection
+            localStorage.setItem(STORAGE_KEY, collectionId);
+            
+            linksContainer.innerHTML = '<div class="loading">Loading...</div>';
+            
+            try {
+                const url = collectionId ? `/api/links?collection_id=${collectionId}` : '/api/links';
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error('Failed to load');
+                const links = await resp.json();
+                
+                if (links.length === 0) {
+                    linksContainer.innerHTML = '<div class="empty-state">No links found</div>';
+                    return;
+                }
+                
+                linksContainer.innerHTML = links.map(link => `
+                    <a href="${esc(link.url)}" class="link-card" target="_blank" rel="noopener">
+                        <span class="link-name">${esc(link.name)}</span>
+                        ${link.collection ? `<span class="link-collection">${esc(link.collection)}</span>` : ''}
+                        <span class="link-meta">${esc(getDomain(link.url))}</span>
+                    </a>
+                `).join('');
+            } catch (e) {
+                console.error('Links error:', e);
+                linksContainer.innerHTML = '<div class="error-state">Failed to load links</div>';
+            }
+        }
+
+        // Load HN
+        async function loadHN() {
+            hnContainer.innerHTML = '<div class="loading">Loading...</div>';
+            
+            try {
+                const resp = await fetch('/api/hackernews');
+                if (!resp.ok) throw new Error('Failed to load');
+                const items = await resp.json();
+                
+                if (items.length === 0) {
+                    hnContainer.innerHTML = '<div class="empty-state">No items</div>';
+                    return;
+                }
+                
+                hnContainer.innerHTML = items.map(item => `
+                    <div class="hn-item">
+                        <a href="${esc(item.url)}" class="hn-title" target="_blank" rel="noopener">${esc(item.title)}</a>
+                        <div class="hn-meta">
+                            ${item.comments_url ? `<a href="${esc(item.comments_url)}" target="_blank">comments</a>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('HN error:', e);
+                hnContainer.innerHTML = '<div class="error-state">Failed to load HN</div>';
+            }
+        }
+
+        // Load services
+        async function loadServices() {
+            try {
+                const resp = await fetch('/api/services');
+                const services = await resp.json();
+                
+                let html = services.map((s, i) => `
+                    <a href="${esc(s.url)}" class="service-card" target="_blank" rel="noopener" title="${esc(s.url)}">
+                        <button class="service-delete" onclick="deleteService(event, ${i})">×</button>
+                        <span class="service-icon">${getServiceIcon(s.name)}</span>
+                        <span class="service-name">${esc(s.name)}</span>
+                    </a>
+                `).join('');
+                
+                // Add the "+" card
+                html += `
+                    <div class="service-card add-service-card" onclick="openModal()">
+                        <span class="service-icon">+</span>
+                        <span class="service-name">Add</span>
+                    </div>
+                `;
+                
+                servicesContainer.innerHTML = html;
+            } catch (e) {
+                console.error('Services error:', e);
+                servicesContainer.innerHTML = '<div class="error-state">Failed to load</div>';
+            }
+        }
+
+        async function addService(event) {
+            event.preventDefault();
+            const name = document.getElementById('service-name').value;
+            const url = document.getElementById('service-url').value;
+            
+            try {
+                const resp = await fetch('/api/services', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, url })
+                });
+                if (!resp.ok) throw new Error('Failed');
+                
+                closeModal();
+                loadServices();
+                document.getElementById('service-name').value = '';
+                document.getElementById('service-url').value = '';
+            } catch (e) {
+                alert('Failed to add service');
+            }
+        }
+
+        async function deleteService(event, index) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            try {
+                const resp = await fetch(`/api/services/${index}`, { method: 'DELETE' });
+                if (!resp.ok) throw new Error('Failed');
+                loadServices();
+            } catch (e) {
+                alert('Failed to delete service');
+            }
+        }
+
+        function openModal() {
+            document.getElementById('modal-overlay').classList.add('active');
+            document.getElementById('service-name').focus();
+        }
+
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        function esc(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function getDomain(url) {
+            try {
+                return new URL(url).hostname;
+            } catch {
+                return url;
+            }
+        }
+
+        // Event listeners
+        collectionFilter.addEventListener('change', loadLinks);
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Initial load
+        loadCollections().then(loadLinks);
+        loadServices();
+        loadHN();
+    </script>
+</body>
+</html>
