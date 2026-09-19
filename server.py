@@ -7,6 +7,7 @@ import os
 import random
 import sys
 import traceback
+import uuid
 from pathlib import Path
 
 import feedparser
@@ -72,13 +73,19 @@ SERVICES_FILE = DATA_DIR / "services.json"
 class Service(BaseModel):
     name: str
     url: str
+    id: str | None = None
 
 
 def load_services() -> list[dict]:
     """Load services from JSON file."""
     if SERVICES_FILE.exists():
         try:
-            return json.loads(SERVICES_FILE.read_text())
+            services = json.loads(SERVICES_FILE.read_text())
+            # Backfill missing ids with UUIDs for backward compatibility
+            for service in services:
+                if "id" not in service:
+                    service["id"] = str(uuid.uuid4())
+            return services
         except Exception as e:
             logger.error(f"Failed to load services: {e}")
     return []
@@ -273,21 +280,37 @@ async def get_services():
 async def add_service(service: Service):
     """Add a new service."""
     services = load_services()
-    services.append({"name": service.name, "url": service.url})
+    new_id = str(uuid.uuid4())
+    services.append({"id": new_id, "name": service.name, "url": service.url})
     save_services(services)
     logger.info(f"Added service: {service.name}")
     return {"status": "ok"}
 
 
-@app.delete("/api/services/{index}")
-async def delete_service(index: int):
-    """Delete a service by index."""
+@app.put("/api/services/{service_id}")
+async def update_service(service_id: str, service: Service):
+    """Update an existing service by ID."""
     services = load_services()
-    if 0 <= index < len(services):
-        removed = services.pop(index)
-        save_services(services)
-        logger.info(f"Deleted service: {removed['name']}")
-        return {"status": "ok"}
+    for s in services:
+        if s["id"] == service_id:
+            s["name"] = service.name
+            s["url"] = service.url
+            save_services(services)
+            logger.info(f"Updated service: {service.name}")
+            return {"status": "ok"}
+    raise HTTPException(404, "Service not found")
+
+
+@app.delete("/api/services/{service_id}")
+async def delete_service(service_id: str):
+    """Delete a service by ID."""
+    services = load_services()
+    for i, s in enumerate(services):
+        if s["id"] == service_id:
+            removed = services.pop(i)
+            save_services(services)
+            logger.info(f"Deleted service: {removed['name']}")
+            return {"status": "ok"}
     raise HTTPException(404, "Service not found")
 
 
