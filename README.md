@@ -1,6 +1,6 @@
 # Frontpage - Self-Hosted Landing Page Dashboard
 
-A lightweight, self-hosted landing page dashboard that integrates with **Linkwarden** or **Karakeep** for bookmark management, displays Hacker News stories, and allows manual service links. Built with FastAPI and served as a single-page application.
+A lightweight landing page dashboard integrating with **Linkwarden** or **Karakeep** for bookmarks, displaying Hacker News stories, and custom service links. Built with FastAPI.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.12+-green.svg)
@@ -8,188 +8,126 @@ A lightweight, self-hosted landing page dashboard that integrates with **Linkwar
 
 ## Features
 
-- **Dual Bookmark Service Support**: Choose between Linkwarden or Karakeep for bookmark integration
-- **Hacker News Feed**: Real-time HN frontpage stories via RSS
-- **Manual Services**: Add custom service links (e.g., Plex, Nextcloud, etc.)
-- **Three-Column Layout**: Clean, responsive design with dedicated sections
-- **Environment-Based Configuration**: No hardcoded credentials
-- **Docker Ready**: Easy deployment with docker-compose
-
-## Architecture
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   index.html    │────▶│   server.py      │────▶│  Linkwarden     │
-│   (Frontend)    │     │   (FastAPI)      │     │  OR Karakeep    │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                              │
-                              ▼
-                       ┌──────────────────┐
-                       │  Hacker News RSS │
-                       └──────────────────┘
-```
+- **Dual Bookmark Support**: Linkwarden or Karakeep integration
+- **Hacker News Feed**: Real-time frontpage stories via RSS
+- **Manual Services**: Add custom links (Plex, Nextcloud, etc.)
+- **Responsive Design**: Clean three-column layout
+- **Docker Ready**: Simple deployment with docker-compose
 
 ## Quick Start
 
-### Prerequisites
-
-- Docker and Docker Compose installed
-- Access to a Linkwarden or Karakeep instance (optional, for bookmark integration)
-
-### Installation
-
-1. **Clone or download this repository**
-
-2. **Configure environment variables**
-
-   Create a `.env` file in the project root:
-   
+1. **Create `.env` file**:
    ```bash
-   # Select bookmark service: "linkwarden" or "karakeep"
    BOOKMARK_SERVICE=linkwarden
-   
-   # Linkwarden configuration (if using Linkwarden)
    LINKWARDEN_HOST=http://your-linkwarden-host:3000
    LINKWARDEN_TOKEN=your_api_token_here
-   LINKWARDEN_COLLECTION_ID=  # Optional: filter by collection ID
-   LINKWARDEN_LIMIT=10        # Number of bookmarks to display
-   
-   # Karakeep configuration (if using Karakeep)
-   # KARAKEEP_HOST=http://your-karakeep-host:3000
-   # KARAKEEP_TOKEN=your_api_token_here
-   # KARAKEEP_TAG=  # Optional: filter by tag
-   # KARAKEEP_LIMIT=10  # Number of bookmarks to display
+   LINKWARDEN_COLLECTION_ID=  # Optional
+   LINKWARDEN_LIMIT=10
    ```
 
-   > **Note**: If you don't have Linkwarden or Karakeep, leave the token empty. The app will run without bookmark integration.
-
-3. **Start the container**
+2. **Start the container**:
    ```bash
    docker compose up -d
    ```
 
-4. **Access the dashboard**
+3. **Access**: Navigate to `http://localhost:8080`
 
-   Open your browser and navigate to: `http://localhost:8080`
+> No bookmark service? Leave token empty—app runs without integration.
 
-## Configuration Options
+## Configuration
 
 ### General Settings
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `BOOKMARK_SERVICE` | Select bookmark service: `linkwarden` or `karakeep` | `linkwarden` | No |
+| `BOOKMARK_SERVICE` | Select service: `linkwarden` or `karakeep` | `linkwarden` | No |
 
 ### Linkwarden Settings
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `LINKWARDEN_HOST` | URL of your Linkwarden server | `http://localhost:3000` | No |
-| `LINKWARDEN_TOKEN` | Linkwarden API token | (empty) | No* |
-| `LINKWARDEN_COLLECTION_ID` | Filter bookmarks to specific collection | (all collections) | No |
-| `LINKWARDEN_LIMIT` | Number of random bookmarks to display | `10` | No |
+| `LINKWARDEN_HOST` | Linkwarden server URL | `http://localhost:3000` | No |
+| `LINKWARDEN_TOKEN` | API token | (empty) | No* |
+| `LINKWARDEN_COLLECTION_ID` | Filter by collection | (all) | No |
+| `LINKWARDEN_LIMIT` | Bookmarks to display | `10` | No |
 
 ### Karakeep Settings
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `KARAKEEP_HOST` | URL of your Karakeep server | `http://localhost:3000` | No |
-| `KARAKEEP_TOKEN` | Karakeep API token | (empty) | No* |
-| `KARAKEEP_TAG` | Filter bookmarks by tag | (all tags) | No |
-| `KARAKEEP_LIMIT` | Number of random bookmarks to display | `10` | No |
+| `KARAKEEP_HOST` | Karakeep server URL | `http://localhost:3000` | No |
+| `KARAKEEP_TOKEN` | API token | (empty) | No* |
+| `KARAKEEP_TAG` | Filter by tag | (all) | No |
+| `KARAKEEP_LIMIT` | Bookmarks to display | `10` | No |
 
-\* Required only if using the respective bookmark service integration
+\* Required only if using the respective service
 
 ### Getting Your API Token
 
-#### Linkwarden
+**Linkwarden**: Settings → API → Generate token
 
-1. Log into your Linkwarden instance
-2. Go to Settings → API
-3. Generate a new token
-4. Copy and add it to your `.env` file
-
-#### Karakeep
-
-1. Log into your Karakeep instance
-2. Navigate to Settings or API section
-3. Generate a new API token
-4. Copy and add it to your `.env` file
+**Karakeep**: Settings/API section → Generate token
 
 ## Manual Services
 
-Add custom service links directly from the UI:
+Add custom links from the UI:
 
-1. Click the "+" button in the Services column
-2. Enter a name (e.g., "Plex") and URL (e.g., `http://plex:32400`)
-3. Services are persisted in `/app/data/services.json`
+1. Click "+" in the Services column
+2. Enter name and URL (e.g., "Plex", `http://plex:32400`)
+3. Services persist in `/app/data/services.json`
 
 ## Project Structure
 
 ```
 .
-├── server.py           # FastAPI backend application
-├── index.html          # Single-page frontend application
-├── docker-compose.yml  # Docker Compose configuration
+├── server.py           # FastAPI backend
+├── index.html          # Frontend SPA
+├── docker-compose.yml  # Docker Compose config
 ├── Dockerfile          # Container build instructions
 ├── requirements.txt    # Python dependencies
-├── .env.example        # Environment variable template
-├── .gitignore          # Git ignore rules
-└── data/               # Persistent data directory (created at runtime)
-    └── services.json   # Manually added services
+└── data/               # Persistent data (created at runtime)
+    └── services.json   # Manual services
 ```
+
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/` | Serve the main HTML page |
-| `GET` | `/api/collections` | Get all collections from configured bookmark service |
-| `GET` | `/api/links` | Get random bookmarks (supports `collection_id` for Linkwarden, `tag` for Karakeep) |
+| `GET` | `/` | Serve main HTML page |
+| `GET` | `/api/collections` | Get all collections from bookmark service |
+| `GET` | `/api/links` | Get random bookmarks (`?collection_id=` for Linkwarden, `?tag=` for Karakeep) |
 | `GET` | `/api/hackernews` | Fetch HN frontpage stories |
-| `GET` | `/api/services` | Get all manual services |
+| `GET` | `/api/services` | Get manual services |
 | `POST` | `/api/services` | Add a new service |
-| `DELETE` | `/api/services/{index}` | Delete a service by index |
+| `DELETE` | `/api/services/{index}` | Delete service by index |
 
-### Query Parameters for `/api/links`
+## Security
 
-- **Linkwarden**: `?collection_id=123` - Filter by collection ID
-- **Karakeep**: `?tag=mytag` - Filter by tag
+- ✅ No hardcoded credentials
+- ✅ Generic error messages (internal details hidden)
+- ✅ Server-side logging only
+- ✅ `.gitignore` configured
 
-## Security Considerations
-
-- ✅ **No hardcoded credentials**: All sensitive config via environment variables
-- ✅ **Generic error messages**: Internal details not exposed to clients
-- ✅ **Server-side logging**: Full tracebacks logged server-side only
-- ✅ **.gitignore configured**: Prevents accidental commit of `.env` files
-
-### Best Practices
-
-1. Never commit your `.env` file to version control
-2. Use strong API tokens for Linkwarden
-3. Run behind a reverse proxy (nginx, Traefik) for production use
+**Best Practices**:
+1. Never commit `.env` to version control
+2. Use strong API tokens
+3. Run behind reverse proxy (nginx, Traefik) in production
 4. Enable HTTPS for external access
 
 ## Development
 
-### Running Locally (without Docker)
+### Running Locally
 
 ```bash
-# Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
+source .venv/bin/activate
 pip install -r requirements.txt
-
-# Set environment variables
 export LINKWARDEN_TOKEN=your_token
-
-# Run the server
 python server.py
 ```
 
-### Building the Docker Image Manually
+### Building Docker Image
 
 ```bash
 docker build -t frontpage .
@@ -198,45 +136,27 @@ docker run -p 8080:8080 --env-file .env frontpage
 
 ## Troubleshooting
 
-### Bookmark Service Connection Issues
+**Connection Issues**:
+- Verify `BOOKMARK_SERVICE` is set correctly
+- Ensure `*_HOST` URL is accessible from container
+- Check API token validity
+- Review logs: `docker compose logs frontpage`
 
-- Verify `BOOKMARK_SERVICE` is set correctly (`linkwarden` or `karakeep`)
-- Check that the corresponding `*_HOST` URL is accessible from the container
-- Ensure the API token (`*_TOKEN`) is valid and has proper permissions
-- Review container logs: `docker compose logs frontpage`
+**Data Persistence**: Services stored in `./data/services.json`. Ensure write permissions.
 
-### Linkwarden-Specific Issues
-
-- Verify `LINKWARDEN_HOST` is accessible from the container
-- Check that `LINKWARDEN_TOKEN` is valid
-- Review container logs: `docker compose logs frontpage`
-
-### Karakeep-Specific Issues
-
-- Verify `KARAKEEP_HOST` is accessible from the container
-- Check that `KARAKEEP_TOKEN` is valid
-- Ensure the tag filter (if used) exists in your Karakeep instance
-- Review container logs: `docker compose logs frontpage`
-
-### Data Persistence
-
-Services are stored in `./data/services.json`. Ensure the `data/` directory has proper write permissions.
-
-### Port Conflicts
-
-If port 8080 is in use, modify the port mapping in `docker-compose.yml`:
+**Port Conflicts**: Modify port mapping in `docker-compose.yml`:
 ```yaml
 ports:
-  - "8081:8080"  # Change host port to 8081
+  - "8081:8080"  # Change host port
 ```
 
 ## License
 
-MIT License - feel free to use and modify as needed.
+MIT License
 
 ## Acknowledgments
 
-- [Linkwarden](https://linkwarden.app/) - Self-hosted bookmark manager
-- [Karakeep](https://karakeep.com/) - Self-hosted bookmark and link manager
-- [Hacker News](https://news.ycombinator.com/) - Tech news community
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+- [Linkwarden](https://linkwarden.app/)
+- [Karakeep](https://karakeep.com/)
+- [Hacker News](https://news.ycombinator.com/)
+- [FastAPI](https://fastapi.tiangolo.com/)
