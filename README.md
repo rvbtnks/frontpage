@@ -1,6 +1,6 @@
 # Frontpage - Self-Hosted Landing Page Dashboard
 
-A lightweight landing page dashboard integrating with **Linkwarden** or **Karakeep** for bookmarks, displaying Hacker News stories, and custom service links. Built with FastAPI.
+A lightweight landing page dashboard integrating with **Linkwarden** or **Karakeep** for bookmarks, displaying a rss feed, and custom service links. Built with FastAPI.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.12+-green.svg)
